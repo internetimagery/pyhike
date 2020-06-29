@@ -1,11 +1,15 @@
-from typing import Iterator
+from typing import Iterator, Optional
 
 
 import os
 import re
+import imp
 
-MODULE_REG = re.compile(r"(\w+)\.(py[cwd]?|so)$")
-MODULE_INIT = ("__init__", "__main__")
+MODULE_REG = re.compile(
+    r"(\w+)({})$".format(
+        "|".join(re.escape(suffix) for suffix, _, _ in imp.get_suffixes())
+    )
+)
 
 
 class Chart(object):
@@ -54,32 +58,35 @@ class TrailBlazer(object):
         for name in os.listdir(filepath):
             fullpath = os.path.join(filepath, name)
             if os.path.isfile(fullpath):
-                match = MODULE_REG.match(name)
-                if not match:
-                    continue
-                if match.group(1) == "__init__":
-                    module_name = os.path.basename(filepath)
-                else:
-                    module_name = match.group(1)
-                modules[module_name] = fullpath
+                module_name = self._module_name(fullpath)
+                if module_name:
+                    modules[module_name] = fullpath
             elif os.path.isdir(fullpath):
                 for subname in os.listdir(fullpath):
-                    match = MODULE_REG.match(subname)
-                    if not match or match.group(1) != "__init__`":
+                    subpath = os.path.join(fullpath, subname)
+                    module_name = self._module_name(subpath)
+                    if not module_name or module_name != subname:
                         continue
-                    modules[name] = os.path.join(fullpath, subname)
+                    modules[name] = subpath
                     break
-        for module_name, module_path in modules.items():
-            sub_fullname = self._join(fullname, module_name)
-            self._visitor.enter(sub_fullname)
-            if not self._visitor.visit_file(sub_fullname, module_path, self):
-                self.roam_file(module_path, sub_fullname)
-            self._visitor.leave(sub_fullname)
+        for name in sorted(modules):
+            self.roam_file(modules[name], fullname)
 
     def roam_file(self, filepath, fullname=""):
-        # type: (str, str)-> None
+        # type: (str, str) -> None
         """ Import a new module from filepath """
-        pass
+        module_name = self._module_name(filepath)
+        if not module_name:
+            raise ValueError(
+                "File path provided is not a valid module {}".format(filepath)
+            )
+        subname = self._join(fullname, module_name)
+        self._visitor.enter(subname)
+        if not self._visitor.visit_file(subname, filepath, self):
+            module_params = imp.find_module(subname, [os.path.dirname(filepath)])
+            module = imp.load_module(subname, *module_params)
+            self.roam_module(module, subname)
+        self._visitor.leave(subname)
 
     def roam_module(self, module, fullname=""):
         # type: (object, str) -> None
@@ -97,3 +104,14 @@ class TrailBlazer(object):
         if not name1:
             return name2
         return "{}.{}".format(name1, name2)
+
+    @staticmethod
+    def _module_name(filepath):
+        # type: (str) -> Optional[str]
+        match = MODULE_REG.match(os.path.basename(filepath))
+        if not match:
+            return None
+        if match.group(1) == "__init__":
+            directory = os.path.dirname(filepath)
+            return os.path.basename(directory)
+        return match.group(1)
