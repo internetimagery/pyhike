@@ -1,9 +1,13 @@
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Dict, Type
 
 
 import os
 import re
+import sys
 import imp
+import types
+import inspect
+import contextlib
 
 MODULE_REG = re.compile(
     r"(\w+)({})$".format(
@@ -13,12 +17,6 @@ MODULE_REG = re.compile(
 
 
 class Chart(object):
-    """ Options to take while traversing objects """
-
-    pass
-
-
-class Trail(object):
     """
     Visit each object along the way!
     For each visitation, return True to prevent further descent on the path.
@@ -32,19 +30,30 @@ class Trail(object):
         # type: (str) -> None
         """ Run after visiting """
 
+    def error(self, errType, errVal, errTrace):
+        # type: (Type[Exception], Exception, types.TracebackType) -> Optional[bool]
+        """ Respond to errors """
+
     def visit_file(self, fullname, filepath, traveler):
-        # type: (str, str, TrailBlazer) -> bool
+        # type: (str, str, TrailBlazer) -> Optional[bool]
         """ Visit a python module filepath """
-        return False
+
+    def visit_module(self, fullname, module, traveler):
+        # type: (str, object, TrailBlazer) -> Optional[bool]
+        """ Visit a module """
+
+    def visit_class(self, fullname, class_, traveler):
+        # type: (str, object, TrailBlazer) -> Optional[bool]
+        """ Visit a class """
 
 
 class TrailBlazer(object):
     """ Carve a trail through python objects! """
 
-    def __init__(self, options, visitor):
-        # type: (Chart, Trail) -> None
-        self._options = options
+    def __init__(self, visitor):
+        # type: (Chart) -> None
         self._visitor = visitor
+        self._seen = {}  # type: Dict[int, object]
 
     def roam_directory(self, filepath, fullname=""):
         # type: (str, str) -> None
@@ -81,21 +90,37 @@ class TrailBlazer(object):
                 "File path provided is not a valid module {}".format(filepath)
             )
         subname = self._join(fullname, module_name)
-        self._visitor.enter(subname)
-        if not self._visitor.visit_file(subname, filepath, self):
+        with self._scope(subname):
+            if self._visitor.visit_file(subname, filepath, self):
+                return
             module_params = imp.find_module(subname, [os.path.dirname(filepath)])
-            module = imp.load_module(subname, *module_params)
-            self.roam_module(module, subname)
-        self._visitor.leave(subname)
+            try:
+                module = imp.load_module(subname, *module_params)
+            except Exception:
+                if self._visitor.error(*sys.exc_info()):
+                    raise
+            else:
+                self.roam_module(module, subname)
 
-    def roam_module(self, module, fullname=""):
+    def roam_module(self, module, fullname):
         # type: (object, str) -> None
         """ Wander through a module """
-        pass
+        if id(module) in self._seen:
+            return
+        with self._scope(fullname):
+            if self._visitor.visit_module(fullname, module, self):
+                return
+            for name, value in inspect.getmembers(module):
+                subname = self._join(fullname, name)
+                if inspect.isclass(value):
+                    self.roam_class(value, subname)
 
-    def roam_class(self, class_, fullname=""):
+    def roam_class(self, class_, fullname):
         # type: (object, str) -> None
         """ Travel into a class """
+        with self._scope(fullname):
+            if self._visitor.visit_class(fullname, class_, self):
+                return
         pass
 
     @staticmethod
@@ -115,3 +140,9 @@ class TrailBlazer(object):
             directory = os.path.dirname(filepath)
             return os.path.basename(directory)
         return match.group(1)
+
+    @contextlib.contextmanager
+    def _scope(self, fullname):
+        self._visitor.enter(fullname)
+        yield
+        self._visitor.leave(fullname)

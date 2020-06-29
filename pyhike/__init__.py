@@ -1,1 +1,1 @@
-from pyhike._trekking import Chart, Trail, TrailBlazer
+from pyhike._trekking import Chart, TrailBlazer
