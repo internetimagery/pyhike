@@ -48,8 +48,7 @@ class TestVisitor(Chart):
         self.staticmethods[name] = func.__func__.__name__
 
     def visit_property(self, name, func, _):
-        print(">>", dir(func))
-        self.properties[name] = func.__name__
+        self.properties[name] = func.fget.__name__
 
     def visit_attribute(self, name, value, _):
         self.attributes[name] = value
@@ -88,7 +87,12 @@ class TestTrailBlazer(unittest.TestCase):
     def test_visit_module(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
-            self.visitor.modules, {"test_simple": "test_simple"},
+            self.visitor.modules,
+            {
+                "test_simple": "test_simple",
+                "test_simple.test_import_a": "test_import_a",
+                "test_simple.test_import_a.test_import_b": "test_import_b",
+            },
         )
 
     def test_visit_module_error(self):
@@ -127,6 +131,13 @@ class TestTrailBlazer(unittest.TestCase):
         self.assertEqual(
             "test_staticmethod",
             self.visitor.staticmethods["test_simple.TestClass.test_staticmethod"],
+        )
+
+    def test_visit_property(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "test_property",
+            self.visitor.properties["test_simple.TestClass.test_property"],
         )
 
     def test_visit_attributes(self):

@@ -1,3 +1,6 @@
+import test_import_a
+
+
 class TestClass(object):
     def test_method(self):
         pass
@@ -8,6 +11,10 @@ class TestClass(object):
 
     @staticmethod
     def test_staticmethod():
+        pass
+
+    @property
+    def test_property(self):
         pass
 
 
