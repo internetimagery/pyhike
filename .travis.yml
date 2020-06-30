@@ -7,7 +7,8 @@ install:
 # Install current working version
 - pip install -e ./
 env:
-  TEST="python -m unittest testing"
+  TEST1="python -m unittest testing"
+  TEST2="echo ok"
 jobs:
   include:
     python: '3.6'
@@ -15,6 +16,8 @@ jobs:
     - pip install mypy
     - pip install black
     env:
-    - TEST="black --check . && mypy pyhike"
+    - TEST1="black --check ."
+    - TEST2="mypy pyhike"
 script:
-- $TEST
+- $TEST1
+- $TEST2
