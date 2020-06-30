@@ -1,0 +1,19 @@
+
+language: python
+python:
+- '2.7'
+- '3.6'
+install:
+# Install current working version
+- pip install -e ./
+jobs:
+  include:
+    python: '3.6'
+    install:
+    - pip install mypy
+    - pip install black
+    script:
+    - mypy pyhike
+    - black .
+script:
+- python -m testing
