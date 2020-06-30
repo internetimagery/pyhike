@@ -1,4 +1,4 @@
-from typing import Iterator, Optional, Dict, Type, Any
+from typing import Iterator, Optional, Dict, Type, Any, List, Tuple, Callable
 
 
 import os
@@ -41,7 +41,7 @@ class Chart(object):
         """ Visit a python module filepath """
 
     def visit_module(self, fullname, module, traveler):
-        # type: (str, object, TrailBlazer) -> Optional[bool]
+        # type: (str, types.ModuleType, TrailBlazer) -> Optional[bool]
         """ Visit a module """
 
     def visit_class(self, fullname, class_, traveler):
@@ -72,7 +72,7 @@ class TrailBlazer(object):
         # type: (Chart) -> None
         self._visitor = visitor
         self._pass_error = False
-        self._queue = []  # type: List[Tuple[int, int, object]]
+        self._queue = []  # type: List[Tuple[int, int, Callable[[], None]]]
         self._tiebreaker = 0
 
     def hike(self):
@@ -83,7 +83,7 @@ class TrailBlazer(object):
             func()
 
     def roam_directory(self, filepath, package_name=""):
-        # type: (str, str) -> TraiBlazer
+        # type: (str, str) -> TrailBlazer
         """
         Walk files in a directory. Only following
         python modules.
@@ -98,15 +98,15 @@ class TrailBlazer(object):
         return self
 
     def roam_module(self, module, module_name=""):
-        # type: (object, str) -> TrailBlazer
+        # type: (types.ModuleType, str) -> TrailBlazer
         """ Wander through a module """
         if not module_name:
-            module_name = self._join(module.__package__, module.__name__)
+            module_name = self._join(module.__package__ or "", module.__name__)
         self._enqueue(self._MODULE, module, self._walk_module, module_name)
         return self
 
     def roam_class(self, class_, fullname=""):
-        # type: (object, str) -> TrailBlazer
+        # type: (type, str) -> TrailBlazer
         """ Travel into a class """
         if not fullname:
             fullname = self._name(class_)
@@ -154,14 +154,14 @@ class TrailBlazer(object):
             self.roam_module(module, subname)
 
     def _walk_module(self, module, fullname):
-        # type: (object, str) -> None
+        # type: (types.ModuleType, str) -> None
         with self._scope(fullname):
             if self._visitor.visit_module(fullname, module, self):
                 return
             self._walk_object(module, fullname)
 
     def _walk_class(self, class_, fullname):
-        # type: (object, str) -> None
+        # type: (type, str) -> None
         with self._scope(fullname):
             if self._visitor.visit_class(fullname, class_, self):
                 return
@@ -169,7 +169,7 @@ class TrailBlazer(object):
                 self._walk_object(class_, fullname)
 
     def _walk_function(self, func, fullname):
-        # type: (object, str) -> None
+        # type: (types.FunctionType, str) -> None
         with self._scope(fullname):
             self._visitor.visit_function(fullname, func, self)
 
@@ -199,7 +199,7 @@ class TrailBlazer(object):
         return "{}.{}".format(name1, name2)
 
     def _name(self, object_):
-        # type: (object) -> str
+        # type: (type) -> str
         try:
             name = object_.__qualname__
         except AttributeError:
@@ -218,7 +218,7 @@ class TrailBlazer(object):
         return match.group(1)
 
     def _enqueue(self, priority, value, func, name):
-        # type: (int, object, object, str) -> None
+        # type: (int, object, Callable, str) -> None
         self._tiebreaker += 1
         heapq.heappush(
             self._queue, (priority, self._tiebreaker, lambda: func(value, name),),
