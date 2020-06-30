@@ -78,9 +78,10 @@ class TrailBlazer(object):
     def hike(self):
         """ Travel through the objects provided! """
         # Using a queue so we walk bottom up
-        while self._queue:
-            _, _, func = heapq.heappop(self._queue)
-            func()
+        with self._cleanup():
+            while self._queue:
+                _, _, func = heapq.heappop(self._queue)
+                func()
 
     def roam_directory(self, filepath, package_name=""):
         # type: (str, str) -> TrailBlazer
@@ -186,7 +187,7 @@ class TrailBlazer(object):
                 self.roam_module(value, subname)
             elif inspect.isclass(value):
                 self.roam_class(value, subname)
-            elif inspect.isfunction(value):
+            elif inspect.isroutine(value):
                 self._enqueue(self._FUNCTION, value, self._walk_function, subname)
             else:
                 self._enqueue(self._ATTRIBUTE, value, self._walk_attribute, subname)
@@ -237,3 +238,19 @@ class TrailBlazer(object):
                 raise
         finally:
             self._visitor.leave(fullname)
+
+    @contextlib.contextmanager
+    def _cleanup(self):
+        """ * Disable bytecode generation, so our imports
+            dont leave traces all over code bases
+            * Restore sys.modules so our imports don't mess with
+            code any more than is unavoidable.
+        """
+        value = sys.dont_write_bytecode
+        modules = sys.modules.copy()
+        sys.dont_write_bytecode = True
+        try:
+            yield
+        finally:
+            sys.dont_write_bytecode = value
+            sys.modules = modules

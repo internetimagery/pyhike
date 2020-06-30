@@ -35,10 +35,12 @@ class TestVisitor(Chart):
         self.attributes[name] = value
 
 
-class TestDirectory(unittest.TestCase):
+class TestTrailBlazer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.test_simple = os.path.join(TESTDIR, "test_simple.py")
+        cls.test_import_a = os.path.join(TESTDIR, "test_import_a.py")
+        cls.test_import_b = os.path.join(TESTDIR, "test_import_b.py")
         cls.test_error = os.path.join(TESTDIR, "test_error.py")
 
     def setUp(self):
@@ -49,7 +51,12 @@ class TestDirectory(unittest.TestCase):
         self.traveler.roam_directory(TESTDIR).hike()
         self.assertEqual(
             self.visitor.files,
-            {"test_simple": self.test_simple, "test_error": self.test_error,},
+            {
+                "test_simple": self.test_simple,
+                "test_error": self.test_error,
+                "test_import_a": self.test_import_a,
+                "test_import_b": self.test_import_b,
+            },
         )
 
     def test_visit_file(self):
@@ -74,19 +81,12 @@ class TestDirectory(unittest.TestCase):
 
     def test_visit_class(self):
         self.traveler.roam_file(self.test_simple).hike()
-        self.assertEqual(
-            self.visitor.classes,
-            {
-                "test_simple.TestClass": "TestClass",
-                "test_simple.TestClass.__class__": "type",
-            },
-        )
+        self.assertEqual("TestClass", self.visitor.classes["test_simple.TestClass"])
 
     def test_visit_function(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
-            self.visitor.functions,
-            {"test_simple.TestClass.test_method": "test_method",},
+            "test_method", self.visitor.functions["test_simple.TestClass.test_method"]
         )
 
     def test_visit_attributes(self):

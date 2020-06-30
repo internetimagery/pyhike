@@ -1,0 +1,2 @@
+class ImportB(object):
+    pass
