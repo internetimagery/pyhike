@@ -1,1 +1,1 @@
-from test_import_a import ImportB
+from test_import_b import ImportB

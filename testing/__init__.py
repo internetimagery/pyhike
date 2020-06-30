@@ -1,6 +1,9 @@
 import unittest
 
 import os
+import logging
+
+logging.basicConfig()
 
 from pyhike import TrailBlazer, Chart
 
@@ -14,6 +17,10 @@ class TestVisitor(Chart):
         self.modules = {}
         self.classes = {}
         self.functions = {}
+        self.methods = {}
+        self.classmethods = {}
+        self.staticmethods = {}
+        self.properties = {}
         self.attributes = {}
 
     def error(self, *err):
@@ -30,6 +37,19 @@ class TestVisitor(Chart):
 
     def visit_function(self, name, func, _):
         self.functions[name] = func.__name__
+
+    def visit_method(self, name, func, _):
+        self.methods[name] = func.__name__
+
+    def visit_classmethod(self, name, func, _):
+        self.classmethods[name] = func.__func__.__name__
+
+    def visit_staticmethod(self, name, func, _):
+        self.staticmethods[name] = func.__func__.__name__
+
+    def visit_property(self, name, func, _):
+        print(">>", dir(func))
+        self.properties[name] = func.__name__
 
     def visit_attribute(self, name, value, _):
         self.attributes[name] = value
@@ -86,7 +106,27 @@ class TestTrailBlazer(unittest.TestCase):
     def test_visit_function(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
-            "test_method", self.visitor.functions["test_simple.TestClass.test_method"]
+            "test_function", self.visitor.functions["test_simple.test_function"]
+        )
+
+    def test_visit_method(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "test_method", self.visitor.methods["test_simple.TestClass.test_method"]
+        )
+
+    def test_visit_classmethod(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "test_classmethod",
+            self.visitor.classmethods["test_simple.TestClass.test_classmethod"],
+        )
+
+    def test_visit_staticmethod(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "test_staticmethod",
+            self.visitor.staticmethods["test_simple.TestClass.test_staticmethod"],
         )
 
     def test_visit_attributes(self):
