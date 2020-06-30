@@ -15,7 +15,6 @@ jobs:
     - pip install mypy
     - pip install black
     env:
-    - TEST="mypy pyhike"
-    - TEST="black ."
+    - TEST="black --check . && mypy pyhike"
 script:
 - $TEST
