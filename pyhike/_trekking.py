@@ -311,7 +311,9 @@ class TrailBlazer(object):
             yield
         finally:
             sys.dont_write_bytecode = bytecode
-            sys.modules = modules
+            if sys.version_info.major != 2:
+                # This cleanup step doesn't seem to be working in python2
+                sys.modules = modules
             sys.path = path
 
     # Have to chuck this at the bottom, so functions are defined
