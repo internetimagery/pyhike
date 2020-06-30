@@ -13,6 +13,8 @@ class TestVisitor(Chart):
         self.files = {}
         self.modules = {}
         self.classes = {}
+        self.functions = {}
+        self.attributes = {}
 
     def error(self, *err):
         self.errors.append(err)
@@ -26,6 +28,12 @@ class TestVisitor(Chart):
     def visit_class(self, name, class_, _):
         self.classes[name] = class_.__name__
 
+    def visit_function(self, name, func, _):
+        self.functions[name] = func.__name__
+
+    def visit_attribute(self, name, value, _):
+        self.attributes[name] = value
+
 
 class TestDirectory(unittest.TestCase):
     @classmethod
@@ -38,31 +46,52 @@ class TestDirectory(unittest.TestCase):
         self.traveler = TrailBlazer(self.visitor)
 
     def test_visit_directory(self):
-        self.traveler.roam_directory(TESTDIR)
+        self.traveler.roam_directory(TESTDIR).hike()
         self.assertEqual(
             self.visitor.files,
             {"test_simple": self.test_simple, "test_error": self.test_error,},
         )
 
     def test_visit_file(self):
-        self.traveler.roam_file(self.test_simple)
+        self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
             self.visitor.files, {"test_simple": self.test_simple},
         )
 
     def test_visit_module(self):
-        self.traveler.roam_file(self.test_simple)
+        self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
             self.visitor.modules, {"test_simple": "test_simple"},
         )
 
     def test_visit_module_error(self):
-        self.traveler.roam_file(self.test_error)
+        self.traveler.roam_file(self.test_error).hike()
         self.assertEqual(
             self.visitor.modules, {},
         )
         (error,) = self.visitor.errors
         self.assertEqual(RuntimeError, error[0])
+
+    def test_visit_class(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            self.visitor.classes,
+            {
+                "test_simple.TestClass": "TestClass",
+                "test_simple.TestClass.__class__": "type",
+            },
+        )
+
+    def test_visit_function(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            self.visitor.functions,
+            {"test_simple.TestClass.test_method": "test_method",},
+        )
+
+    def test_visit_attributes(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(123, self.visitor.attributes["test_simple.test_attribute"])
 
 
 if __name__ == "__main__":

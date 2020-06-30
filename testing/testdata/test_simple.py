@@ -1,5 +1,5 @@
 class TestClass(object):
-    def testMethod(self):
+    def test_method(self):
         pass
 
 
