@@ -47,10 +47,10 @@ Trigger the traversal (hike).
 
 Contains the following methods to add things for traversal. They are all chainable.
 
-* roam_directory(str) : Walk directory looking for modules. This does not recurse into non-module directories.
-* roam_file(str) : import and traverse a file, given the filepath
-* roam_module(module) : search an already imported module object
-* roam_class(class_) : search an already loaded class object
+* __roam_directory__(str) : Walk directory looking for modules. This does not recurse into non-module directories.
+* __roam_file__(str) : import and traverse a file, given the filepath
+* __roam_module__(module) : search an already imported module object
+* __roam_class__(class_) : search an already loaded class object
 
 Finally the _hike_ method kicks off the traversal, and off we go. Adventure is out there!
 
@@ -63,21 +63,21 @@ The methods all recieve an instance of the active traversal object so they can d
 
 Returning _True_ from a method will stop further traversal along that path at that point (eg return true visiting a class will not traverse its methods).
 
-* visit_file(name, filepath, traveler)
-* visit_module(name, module, traveler)
-* visit_class(name, class_, traveler)
-* visit_function(name, func, parent, traveler)
-* visit_method(name, func, class_, traveler)
-* visit_classmethod(name, func, class_, traveler)
-* visit_staticmethod(name, func, class_, traveler)
-* visit_property(name, func, class_, traveler)
-* visit_attribute(name, value, parent, traveler)
+* __visit_file__(name, filepath, traveler)
+* __visit_module__(name, module, traveler)
+* __visit_class__(name, class_, traveler)
+* __visit_function__(name, func, parent, traveler)
+* __visit_method__(name, func, class_, traveler)
+* __visit_classmethod__(name, func, class_, traveler)
+* __visit_staticmethod__(name, func, class_, traveler)
+* __visit_property__(name, func, class_, traveler)
+* __visit_attribute__(name, value, parent, traveler)
 
 There are a few special methods as well for consideration, that may make life a little easier.
 
-* enter(name) Run before traversing into anything, with the name of the thing it's about to traverse into.
-* leave(name) Run after finishing the traversal. Run with the same name as it was entered.
-* error(errType, errVal, errTrace) Run anytime an error occurrs during traversal. Return _True_ to allow the error to propigate up halting traversal.
+* __enter__(name) Run before traversing into anything, with the name of the thing it's about to traverse into.
+* __leave__(name) Run after finishing the traversal. Run with the same name as it was entered.
+* __error__(errType, errVal, errTrace) Run anytime an error occurrs during traversal. Return _True_ to allow the error to propigate up halting traversal.
 
 ## Notes
 
