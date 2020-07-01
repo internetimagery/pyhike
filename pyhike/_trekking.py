@@ -40,6 +40,10 @@ class Chart(object):
         # type: (Type[Exception], Exception, types.TracebackType) -> Optional[bool]
         """ Respond to errors """
 
+    def visit_directory(self, fullname, directorypath, traveler):
+        # type: (str, str, TrailBlazer) -> Optional[bool]
+        """ Visit a directory (outside or inside a package) """
+
     def visit_file(self, fullname, filepath, traveler):
         # type: (str, str, TrailBlazer) -> Optional[bool]
         """ Visit a python module filepath """
@@ -144,27 +148,33 @@ class TrailBlazer(object):
     def _walk_directory(self, filepath, package_name=""):
         # type: (str, str) -> None
 
-        # Gather information first, as we don't want to
-        # follow duplicate modules (eg .py and .pyc of the same name)
-        modules = {}
-        for name in os.listdir(filepath):
-            fullpath = os.path.join(filepath, name)
-            if os.path.isfile(fullpath):
-                module_name = self._module_name(fullpath)
-                if module_name:
-                    modules[module_name] = fullpath
-            elif os.path.isdir(fullpath):
-                for subname in os.listdir(fullpath):
-                    subpath = os.path.join(fullpath, subname)
-                    module_name = self._module_name(subpath)
-                    if not module_name or module_name != name:
-                        continue
-                    modules[name] = subpath
-                    # Recurse into submodule
-                    self.roam_directory(fullpath, self._join(package_name, module_name))
-                    break
-        for name in sorted(modules):
-            self.roam_file(modules[name], package_name)
+        with self._scope(package_name):
+            if self._visitor.visit_directory(package_name, filepath, self):
+                return
+
+            # Gather information first, as we don't want to
+            # follow duplicate modules (eg .py and .pyc of the same name)
+            modules = {}
+            for name in os.listdir(filepath):
+                fullpath = os.path.join(filepath, name)
+                if os.path.isfile(fullpath):
+                    module_name = self._module_name(fullpath)
+                    if module_name:
+                        modules[module_name] = fullpath
+                elif os.path.isdir(fullpath):
+                    for subname in os.listdir(fullpath):
+                        subpath = os.path.join(fullpath, subname)
+                        module_name = self._module_name(subpath)
+                        if not module_name or module_name != name:
+                            continue
+                        modules[name] = subpath
+                        # Recurse into submodule
+                        self.roam_directory(
+                            fullpath, self._join(package_name, module_name)
+                        )
+                        break
+            for name in sorted(modules):
+                self.roam_file(modules[name], package_name)
 
     def _walk_file(self, filepath, package_name):
         # type: (str, str) -> None

@@ -13,6 +13,7 @@ TESTDIR = os.path.join(os.path.dirname(__file__), "testdata")
 class TestVisitor(Chart):
     def __init__(self):
         self.errors = []
+        self.directories = {}
         self.files = {}
         self.modules = {}
         self.classes = {}
@@ -25,6 +26,9 @@ class TestVisitor(Chart):
 
     def error(self, *err):
         self.errors.append(err)
+
+    def visit_directory(self, name, path, _):
+        self.directories[name] = path
 
     def visit_file(self, name, path, _):
         self.files[name] = path
@@ -77,6 +81,7 @@ class TestTrailBlazer(unittest.TestCase):
                 "test_import_b": self.test_import_b,
             },
         )
+        self.assertEqual(self.visitor.directories, {"": TESTDIR})
 
     def test_visit_file(self):
         self.traveler.roam_file(self.test_simple).hike()

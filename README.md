@@ -63,6 +63,7 @@ The methods all recieve an instance of the active traversal object so they can d
 
 Returning _True_ from a method will stop further traversal along that path at that point (eg return true visiting a class will not traverse its methods).
 
+* __visit_directory__(name, directorypath, traveler)
 * __visit_file__(name, filepath, traveler)
 * __visit_module__(name, module, traveler)
 * __visit_class__(name, class_, traveler)
