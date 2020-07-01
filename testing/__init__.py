@@ -90,8 +90,8 @@ class TestTrailBlazer(unittest.TestCase):
             self.visitor.modules,
             {
                 "test_simple": "test_simple",
-                "test_simple.test_import_a": "test_import_a",
-                "test_simple.test_import_a.test_import_b": "test_import_b",
+                "test_simple:test_import_a": "test_import_a",
+                "test_simple:test_import_a.test_import_b": "test_import_b",
             },
         )
 
@@ -105,44 +105,44 @@ class TestTrailBlazer(unittest.TestCase):
 
     def test_visit_class(self):
         self.traveler.roam_file(self.test_simple).hike()
-        self.assertEqual("TestClass", self.visitor.classes["test_simple.TestClass"])
+        self.assertEqual("TestClass", self.visitor.classes["test_simple:TestClass"])
 
     def test_visit_function(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
-            "test_function", self.visitor.functions["test_simple.test_function"]
+            "test_function", self.visitor.functions["test_simple:test_function"]
         )
 
     def test_visit_method(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
-            "test_method", self.visitor.methods["test_simple.TestClass.test_method"]
+            "test_method", self.visitor.methods["test_simple:TestClass.test_method"]
         )
 
     def test_visit_classmethod(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
             "test_classmethod",
-            self.visitor.classmethods["test_simple.TestClass.test_classmethod"],
+            self.visitor.classmethods["test_simple:TestClass.test_classmethod"],
         )
 
     def test_visit_staticmethod(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
             "test_staticmethod",
-            self.visitor.staticmethods["test_simple.TestClass.test_staticmethod"],
+            self.visitor.staticmethods["test_simple:TestClass.test_staticmethod"],
         )
 
     def test_visit_property(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
             "test_property",
-            self.visitor.properties["test_simple.TestClass.test_property"],
+            self.visitor.properties["test_simple:TestClass.test_property"],
         )
 
     def test_visit_attributes(self):
         self.traveler.roam_file(self.test_simple).hike()
-        self.assertEqual(123, self.visitor.attributes["test_simple.test_attribute"])
+        self.assertEqual(123, self.visitor.attributes["test_simple:test_attribute"])
 
 
 if __name__ == "__main__":

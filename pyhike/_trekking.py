@@ -194,7 +194,7 @@ class TrailBlazer(object):
             if self._visitor.visit_module(fullname, module, self):
                 return
             for name, value in inspect.getmembers(module):
-                subname = self._join(fullname, name)
+                subname = self._join(fullname, name, module=True)
                 if inspect.ismodule(value):
                     self.roam_module(value, subname)
                 elif inspect.isclass(value):
@@ -253,11 +253,12 @@ class TrailBlazer(object):
             self._visitor.visit_attribute(fullname, value, parent, self)
 
     @staticmethod
-    def _join(name1, name2):
-        # type: (str, str) -> str
+    def _join(name1, name2, module=False):
+        # type: (str, str, bool) -> str
         if not name1:
             return name2
-        return "{}.{}".format(name1, name2)
+        sep = ":" if module and ":" not in name1 else "."
+        return name1 + sep + name2
 
     def _name(self, object_):
         # type: (type) -> str
