@@ -2,6 +2,7 @@ import test_import_a
 
 
 class TestClass(object):
+    __slots__ = ()
     def test_method(self):
         pass
 
