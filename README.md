@@ -39,20 +39,20 @@ TrailBlazer(MyVisitor()).roam_file("/path/to/somefile.py").hike()
 
 Create a visitor (or multiple layers of subclass if it makes design sense) for functionality.
 
-Create a traversal object, and add things to traverse (roam_file, roam_class, roam_directory, etc).
+Create a traversal object, and add things to traverse (__roam_file__, __roam_class__, __roam_directory__, etc).
 
-Trigger the traversal (hike).
+Trigger the traversal (__hike__).
 
 ### TrailBlazer
 
-Contains the following methods to add things for traversal. They are all chainable.
+Contains the following methods to add things for traversal. They are all chainable. They can also be used during live traversal to dynamically search new locations (see the visitor methods below).
 
-* __roam_directory__(str) : Walk directory looking for modules. This does not recurse into non-module directories.
-* __roam_file__(str) : import and traverse a file, given the filepath
+* __roam_directory__(filepath) : Walk directory looking for modules. This does not recurse into non-module directories.
+* __roam_file__(filepath) : import and traverse a file, given the filepath
 * __roam_module__(module) : search an already imported module object
 * __roam_class__(class_) : search an already loaded class object
 
-Finally the _hike_ method kicks off the traversal, and off we go. Adventure is out there!
+Finally the __hike__() method kicks off the traversal, and off we go. Adventure is out there!
 
 ### Chart
 
