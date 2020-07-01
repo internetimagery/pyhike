@@ -49,31 +49,31 @@ class Chart(object):
         """ Visit a module """
 
     def visit_class(self, fullname, class_, traveler):
-        # type: (str, object, TrailBlazer) -> Optional[bool]
+        # type: (str, type, TrailBlazer) -> Optional[bool]
         """ Visit a class """
 
-    def visit_function(self, fullname, func, traveler):
-        # type: (str, Callable, TrailBlazer) -> None
+    def visit_function(self, fullname, func, parent, traveler):
+        # type: (str, Callable, Any, TrailBlazer) -> None
         """ Visit a function """
 
-    def visit_method(self, fullname, func, traveler):
-        # type: (str, Callable, TrailBlazer) -> None
+    def visit_method(self, fullname, func, class_, traveler):
+        # type: (str, Callable, type, TrailBlazer) -> None
         """ Visit a method """
 
-    def visit_classmethod(self, fullname, func, traveler):
-        # type: (str, Callable, TrailBlazer) -> None
+    def visit_classmethod(self, fullname, func, class_, traveler):
+        # type: (str, Callable, type, TrailBlazer) -> None
         """ Visit a class method """
 
-    def visit_staticmethod(self, fullname, func, traveler):
-        # type: (str, Callable, TrailBlazer) -> None
+    def visit_staticmethod(self, fullname, func, class_, traveler):
+        # type: (str, Callable, type, TrailBlazer) -> None
         """ Visit a static method """
 
-    def visit_property(self, fullname, func, traveler):
-        # type: (str, Callable, TrailBlazer) -> None
+    def visit_property(self, fullname, func, class_, traveler):
+        # type: (str, Callable, type, TrailBlazer) -> None
         """ Visit a property """
 
-    def visit_attribute(self, fullname, value, traveler):
-        # type: (str, Any, TrailBlazer) -> None
+    def visit_attribute(self, fullname, value, parent, traveler):
+        # type: (str, Any, Any, TrailBlazer) -> None
         """ Visit an attribute """
 
 
@@ -200,9 +200,13 @@ class TrailBlazer(object):
                 elif inspect.isclass(value):
                     self.roam_class(value, subname)
                 elif inspect.isroutine(value):
-                    self._enqueue(self._FUNCTION, self._walk_function, value, subname)
+                    self._enqueue(
+                        self._FUNCTION, self._walk_function, value, module, subname
+                    )
                 else:
-                    self._enqueue(self._ATTRIBUTE, self._walk_attribute, value, subname)
+                    self._enqueue(
+                        self._ATTRIBUTE, self._walk_attribute, value, module, subname
+                    )
 
     def _walk_class(self, class_, fullname):
         # type: (type, str) -> None
@@ -216,37 +220,37 @@ class TrailBlazer(object):
             for attr in inspect.classify_class_attrs(class_):
                 subname = self._join(fullname, attr.name)
                 priority, func = self._class_kind_map[attr.kind]
-                self._enqueue(priority, func, attr.object, subname)
+                self._enqueue(priority, func, attr.object, class_, subname)
 
-    def _walk_function(self, func, fullname):
-        # type: (Callable, str) -> None
+    def _walk_function(self, func, parent, fullname):
+        # type: (Callable, Any, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_function(fullname, func, self)
+            self._visitor.visit_function(fullname, func, parent, self)
 
-    def _walk_method(self, func, fullname):
-        # type: (Callable, str) -> None
+    def _walk_method(self, func, class_, fullname):
+        # type: (Callable, type, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_method(fullname, func, self)
+            self._visitor.visit_method(fullname, func, class_, self)
 
-    def _walk_classmethod(self, func, fullname):
-        # type: (Callable, str) -> None
+    def _walk_classmethod(self, func, class_, fullname):
+        # type: (Callable, type, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_classmethod(fullname, func, self)
+            self._visitor.visit_classmethod(fullname, func, class_, self)
 
-    def _walk_staticmethod(self, func, fullname):
-        # type: (Callable, str) -> None
+    def _walk_staticmethod(self, func, class_, fullname):
+        # type: (Callable, type, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_staticmethod(fullname, func, self)
+            self._visitor.visit_staticmethod(fullname, func, class_, self)
 
-    def _walk_property(self, func, fullname):
-        # type: (Callable, str) -> None
+    def _walk_property(self, func, class_, fullname):
+        # type: (Callable, type, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_property(fullname, func, self)
+            self._visitor.visit_property(fullname, func, class_, self)
 
-    def _walk_attribute(self, value, fullname):
-        # type: (Any, str) -> None
+    def _walk_attribute(self, value, parent, fullname):
+        # type: (Any, Any, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_attribute(fullname, value, self)
+            self._visitor.visit_attribute(fullname, value, parent, self)
 
     @staticmethod
     def _join(name1, name2):

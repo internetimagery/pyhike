@@ -35,22 +35,22 @@ class TestVisitor(Chart):
     def visit_class(self, name, class_, _):
         self.classes[name] = class_.__name__
 
-    def visit_function(self, name, func, _):
+    def visit_function(self, name, func, _, __):
         self.functions[name] = func.__name__
 
-    def visit_method(self, name, func, _):
+    def visit_method(self, name, func, _, __):
         self.methods[name] = func.__name__
 
-    def visit_classmethod(self, name, func, _):
+    def visit_classmethod(self, name, func, _, __):
         self.classmethods[name] = func.__func__.__name__
 
-    def visit_staticmethod(self, name, func, _):
+    def visit_staticmethod(self, name, func, _, __):
         self.staticmethods[name] = func.__func__.__name__
 
-    def visit_property(self, name, func, _):
+    def visit_property(self, name, func, _, __):
         self.properties[name] = func.fget.__name__
 
-    def visit_attribute(self, name, value, _):
+    def visit_attribute(self, name, value, _, __):
         self.attributes[name] = value
 
 
