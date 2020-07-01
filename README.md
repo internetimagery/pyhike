@@ -22,8 +22,8 @@ python -m pip install -U pyhike
 
 There are two parts to the API.
 
-* _Chart_: Visitor interface that you will subclass and provide custom logic on top of
-* _TrailBlazer_: Traversal class that will act on the visitor
+* [Chart](#chart): Visitor interface that you will subclass and provide custom logic on top of
+* [TrailBlazer](#trailblazer): Traversal class that will act on the visitor
 
 ```py
 from pyhike import Chart, TrailBlazer
