@@ -59,12 +59,16 @@ class TestVisitor(Chart):
 
 
 class TestTrailBlazer(unittest.TestCase):
+    maxDiff = None
+
     @classmethod
     def setUpClass(cls):
         cls.test_simple = os.path.join(TESTDIR, "test_simple.py")
         cls.test_import_a = os.path.join(TESTDIR, "test_import_a.py")
         cls.test_import_b = os.path.join(TESTDIR, "test_import_b.py")
         cls.test_error = os.path.join(TESTDIR, "test_error.py")
+        cls.test_package = os.path.join(TESTDIR, "test_package", "__init__.py")
+        cls.test_submodule = os.path.join(TESTDIR, "test_package", "test_submodule.py")
 
     def setUp(self):
         self.visitor = TestVisitor()
@@ -79,9 +83,14 @@ class TestTrailBlazer(unittest.TestCase):
                 "test_error": self.test_error,
                 "test_import_a": self.test_import_a,
                 "test_import_b": self.test_import_b,
+                "test_package": self.test_package,
+                "test_package.test_submodule": self.test_submodule,
             },
         )
-        self.assertEqual(self.visitor.directories, {"": TESTDIR})
+        self.assertEqual(
+            self.visitor.directories,
+            {"": TESTDIR, "test_package": os.path.join(TESTDIR, "test_package")},
+        )
 
     def test_visit_file(self):
         self.traveler.roam_file(self.test_simple).hike()

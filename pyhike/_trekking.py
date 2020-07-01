@@ -145,58 +145,61 @@ class TrailBlazer(object):
         self._enqueue(self._CLASS, self._walk_class, class_, fullname)
         return self
 
-    def _walk_directory(self, filepath, package_name=""):
+    def _walk_directory(self, directory, package_name):
         # type: (str, str) -> None
 
         with self._scope(package_name):
-            if self._visitor.visit_directory(package_name, filepath, self):
+            if self._visitor.visit_directory(package_name, directory, self):
                 return
 
-            # Gather information first, as we don't want to
-            # follow duplicate modules (eg .py and .pyc of the same name)
-            modules = {}
-            for name in os.listdir(filepath):
-                fullpath = os.path.join(filepath, name)
-                if os.path.isfile(fullpath):
-                    module_name = self._module_name(fullpath)
-                    if module_name:
-                        modules[module_name] = fullpath
-                elif os.path.isdir(fullpath):
-                    for subname in os.listdir(fullpath):
-                        subpath = os.path.join(fullpath, subname)
-                        module_name = self._module_name(subpath)
-                        if not module_name or module_name != name:
-                            continue
-                        modules[name] = subpath
-                        # Recurse into submodule
-                        self.roam_directory(
-                            fullpath, self._join(package_name, module_name)
-                        )
-                        break
-            for name in sorted(modules):
-                self.roam_file(modules[name], package_name)
+            modules = set(["__init__"])
+            for name in os.listdir(directory):
+                fullpath = os.path.join(directory, name)
+
+                package_file = self._get_package(fullpath)
+                if package_file:
+                    self.roam_file(package_file, self._join(package_name, name))
+                    self.roam_directory(fullpath, self._join(package_name, name))
+                    modules.add(name)
+                    continue
+
+                match = MODULE_REG.match(name)
+                if not match or match.group(1) in modules:
+                    continue
+                # Don't follow modules more than once. eg py+pyc
+                modules.add(match.group(1))
+                self.roam_file(fullpath, package_name)
 
     def _walk_file(self, filepath, package_name):
         # type: (str, str) -> None
-        module_name = self._module_name(filepath)
-        if not module_name:
+        match = MODULE_REG.match(os.path.basename(filepath))
+        if not match:
             raise ValueError(
                 "File path provided is not a valid module {}".format(filepath)
             )
-        subname = self._join(package_name, module_name)
+        module_name = match.group(1)
+        if module_name == "__init__":
+            if not package_name:
+                fullname = os.path.basename(filepath)
+            else:
+                fullname = package_name
+        else:
+            fullname = self._join(package_name, module_name)
 
-        with self._scope(subname):
-            if self._visitor.visit_file(subname, filepath, self):
+        with self._scope(fullname):
+            if self._visitor.visit_file(fullname, filepath, self):
                 return
 
             # Ensure module (and other imports within it) work
             if not package_name:
                 package_path = os.path.dirname(filepath)
+                if module_name == "__init__":
+                    package_path = os.path.dirname(package_path)
                 if package_path not in sys.path:
                     sys.path.insert(0, package_path)
 
-            module = importlib.import_module(subname)
-            self.roam_module(module, subname)
+            module = importlib.import_module(fullname)
+            self.roam_module(module, fullname)
 
     def _walk_module(self, module, fullname):
         # type: (types.ModuleType, str) -> None
@@ -279,15 +282,17 @@ class TrailBlazer(object):
         return self._join(object_.__module__, name)
 
     @staticmethod
-    def _module_name(filepath):
+    def _get_package(path):
         # type: (str) -> Optional[str]
-        match = MODULE_REG.match(os.path.basename(filepath))
-        if not match:
+        if not os.path.isdir(path):
             return None
-        if match.group(1) == "__init__":
-            directory = os.path.dirname(filepath)
-            return os.path.basename(directory)
-        return match.group(1)
+        for name in os.listdir(path):
+            match = MODULE_REG.match(name)
+            if not match:
+                continue
+            if match.group(1) == "__init__":
+                return os.path.join(path, name)
+        return None
 
     def _enqueue(self, priority, func, *args):
         # type: (int, Callable, *Any) -> None

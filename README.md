@@ -34,7 +34,7 @@ class MyVisitor(Chart):
         print("A METHOD!", name, method)
 
 TrailBlazer(MyVisitor()).roam_file("/path/to/somefile.py").hike()
-# A METHOD somefile:some_method <some_method at 0x123123123>
+# A METHOD somefile:SomeClass.some_method <some_method at 0x123123123>
 ```
 
 Create a visitor (or multiple layers of subclass if it makes design sense) for functionality.
