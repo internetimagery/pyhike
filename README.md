@@ -81,6 +81,9 @@ There are a few special methods as well for consideration, that may make life a 
 
 ## Notes
 
+__There is no attempt at resolving circular code traversal.__ This is left up to the user of the visitor to provide.
+This is to provide more flexability on behalf of the visitor logic. Remember that visitor methods can halt further traversal by returning _True_.
+
 The traversal happens mostly from the bottom up. It visits first come first serve on a priority basis.
 So things are visited in this order:
 
@@ -92,6 +95,7 @@ So things are visited in this order:
 * Attributes
 
 The name provided to the visitor methods is generated from the path taken to reach the object.
-eg *some_package.some_module:SomeClass.some_method*
+eg *some_package.some_module:SomeClass.some_method*. This means that it does not reflect the name of the objects definition. But instead an import path that would lead you there.
 
-This means that it does not reflect the name of the objects definition. But an import path that would lead you there.
+The name splits modules and qualified names by colon.
+
