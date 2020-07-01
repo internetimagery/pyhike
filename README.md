@@ -99,3 +99,5 @@ eg *some_package.some_module:SomeClass.some_method*. This means that it does not
 
 The name splits modules and qualified names by colon.
 
+Errors that occurr during traversal are suppressed, and forwarded to the __error__ visitation method. To allow them to propigate normally, and halt everything return _True_ in the __error__ method.
+
