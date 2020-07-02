@@ -207,7 +207,7 @@ class TrailBlazer(object):
             if self._visitor.visit_module(fullname, module, self):
                 return
             for name, value in inspect.getmembers(module):
-                subname = self._join(fullname, name, module=True)
+                subname = self._join(fullname, name, True)
                 if inspect.ismodule(value):
                     self.roam_module(value, subname)
                 elif inspect.isclass(value):
@@ -270,8 +270,14 @@ class TrailBlazer(object):
         # type: (str, str, bool) -> str
         if not name1:
             return name2
-        sep = ":" if module and ":" not in name1 else "."
-        return name1 + sep + name2
+        name = name1 + "." + name2
+        if not module:
+            return name
+        # Check if we are diverging from all known modules,
+        # then add a colon to indicate the break point.
+        if name not in sys.modules and ":" not in name:
+            name = name1 + ":" + name2
+        return name
 
     def _name(self, object_):
         # type: (type) -> str
