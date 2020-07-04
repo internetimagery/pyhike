@@ -240,8 +240,19 @@ class TrailBlazer(object):
                 return
             for attr in inspect.classify_class_attrs(class_):
                 subname = self._join(fullname, attr.name)
-                if attr.kind == "data" and inspect.isclass(attr.object):
-                    self._enqueue(self._CLASS, self._walk_class, attr.object, subname)
+                if attr.kind == "data":
+                    if inspect.isclass(attr.object):
+                        self._enqueue(
+                            self._CLASS, self._walk_class, attr.object, subname
+                        )
+                    if inspect.isroutine(attr.object):
+                        self._enqueue(
+                            self._FUNCTION,
+                            self._walk_function,
+                            attr.object,
+                            class_,
+                            subname,
+                        )
                 else:
                     priority, func = self._class_kind_map[attr.kind]
                     self._enqueue(priority, func, attr.object, class_, subname)
