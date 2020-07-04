@@ -142,7 +142,15 @@ class TrailBlazer(object):
         """ Travel into a class """
         if not fullname:
             fullname = self._name(class_)
-        self._enqueue(self._CLASS, self._walk_class, class_, fullname)
+        if fullname in sys.modules:
+            # Issue when people dynamically add classes to sys.modules
+            # trying to create namespaces. Happens in typing module.
+            # They want us to treat this class like it was module? So we shall...
+            self._enqueue(
+                self._MODULE, self._walk_module, sys.modules[fullname], fullname
+            )
+        else:
+            self._enqueue(self._CLASS, self._walk_class, class_, fullname)
         return self
 
     def _walk_directory(self, directory, package_name):
