@@ -245,6 +245,7 @@ class TrailBlazer(object):
                         self._enqueue(
                             self._CLASS, self._walk_class, attr.object, subname
                         )
+                        continue
                     if inspect.isroutine(attr.object):
                         self._enqueue(
                             self._FUNCTION,
@@ -253,9 +254,9 @@ class TrailBlazer(object):
                             class_,
                             subname,
                         )
-                else:
-                    priority, func = self._class_kind_map[attr.kind]
-                    self._enqueue(priority, func, attr.object, class_, subname)
+                        continue
+                priority, func = self._class_kind_map[attr.kind]
+                self._enqueue(priority, func, attr.object, class_, subname)
 
     def _walk_function(self, func, parent, fullname):
         # type: (Callable, Any, str) -> None
