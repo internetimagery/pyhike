@@ -1,14 +1,10 @@
-
 language: python
 python:
 - '2.7'
 - '3.6'
 install:
-# Install current working version
 - pip install -e ./
-env:
-  TEST1="python -m unittest testing"
-  TEST2="echo ok"
+env: TEST1="python -m unittest testing" TEST2="echo ok"
 jobs:
   include:
     python: '3.6'
@@ -19,14 +15,13 @@ jobs:
     - TEST1="black --check ."
     - TEST2="mypy pyhike"
 script:
-- $TEST1
-- $TEST2
-
+- "$TEST1"
+- "$TEST2"
 deploy:
   provider: pypi
   skip_existing: true
   user: internetimagery
   password:
-    secure: hu6V5SJByekEGK7bwYrLKODCSYFFdtTHQEAvh6oe/6EBqgy0aHUUUBgS1FpNSf49rLoBPbk+aKKyuWfjBcOz8HCwx7VXvQjdHNxNOkwf1Pah/fpq/dLHucN7hWIW9B1s5HGtERqKusQ6FeIign8I/vLuo+ja9FJFRyWOUex0mTVoezstTtbNAGV0uX5UzU5lOFNpJ3kTkCac9BeL5sFhbM/C1XPT9CVgOObh81WgKBd+AofFCd6DZWTeXHfbzWP1T9FgYJLGJ9mmuL4pIVo1rpP9uSx87ARKJzblH7ahvY5zLtmQi7x3O9rywEWpAEQD2/pm6AG55uEzg9ym6Fexo81Opa/ptroJp3vfTdxpRTJHEc60H+m6Z0pbImXkWVSVQPHIePYT6COQCmxKUYhprXNbTUUlwyG1EkOotCGUhHqhb8gtSoZioIfwNvPLszEavZyEO/Rtd0Xj/VmK0Z/V0qITLsKrTAKm0f80kYkrgCCgTBNrhxu+WQ5FtuicJzIsTyqAxkofUbS7b3vmtsrIfsACoPOuwAnkaWmVYzjukPI5h8Dcmws7jwkBRO9TJct+XX9FiUxARwIj7qMGIYH/aLk7NoevBpQu9gJgkenz1jbzMz6E97PHwXMeebA0Sz/IZ0EuNIvrCDZbozJxve1En5uVDnXw/NezowA4v5MvaZY=
+    secure: t4LnxN8hUlhfH1r04v/hlxg2gv4QgP6aeNYB1LYsKXl+K+RfNJmq3Nh4zemoSarf3nqMHExcpa5kd0210lSfSLGNI9TsVIFgf+iKcKyZU4gWGGbYExtG0CfRc7H2UG1dTuph71cr8jDjqPhvhnl/iPe+d3oPyW9Jf9iBYETBwbscMUDUNFwgKMQ9ebWEYdN9Y5cMhtYR5Nj6lqA8DdpAkitGYKlIdjxfD9cs4T1dG/6PtA/sniUGgMJ6TUTwvrIoQUq843fzKcdWSsSaW51MHzZs+v2JtaBShzQeQ7yMKeCYTaOl9KpL/1U5gMHnSBrvtWFvJ2x3Jgd1s/MD+43Sr76X8sjdOf3awS0j/09ahQ9ehSV2a5MvSAsux2R21uWKc+cWyP/Fz1fTYY0WV2L89KNt9pon1U8j0U4ZQStZrezQwDYh2flflmu/8E2+Vj+qT1hu+MJncFoo/1HbXYsWDUtSiuwHlhFYH80nE2rF912k6I8iLQw+T4lL72dLJj/QiXz2nks8XU5HoyBB12ee0HZbUUiRBfl9u9v60CyNXc3RvXFzNp5bwHEIkdZbN+KQ+XenkRSLRqau4i2qeCC/zHaXcospkHS4czdiJFFntzE2chuYHF4s14CYUpyPXUrA0DoUQgQpvgvWNXN+rDPvMVOD5hxLkn7O15VrBwELLbE=
   on:
-      tags: true
+    tags: true
