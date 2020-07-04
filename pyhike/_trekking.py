@@ -104,6 +104,7 @@ class TrailBlazer(object):
             "property": (self._FUNCTION, self._walk_property),
             "static method": (self._FUNCTION, self._walk_staticmethod),
             "class method": (self._FUNCTION, self._walk_classmethod),
+            "class": (self._CLASS, self._walk_class,),
         }
 
     def hike(self):
@@ -240,7 +241,10 @@ class TrailBlazer(object):
                 return
             for attr in inspect.classify_class_attrs(class_):
                 subname = self._join(fullname, attr.name)
-                priority, func = self._class_kind_map[attr.kind]
+                kind = attr.kind
+                if kind == "data" and inspect.isclass(attr.object):
+                    kind = "class"
+                priority, func = self._class_kind_map[kind]
                 self._enqueue(priority, func, attr.object, class_, subname)
 
     def _walk_function(self, func, parent, fullname):
