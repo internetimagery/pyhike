@@ -129,12 +129,12 @@ class TrailBlazer(object):
         self._enqueue(self._FILE, self._walk_file, filepath, package_name)
         return self
 
-    def roam_module(self, module, module_name=""):
+    def roam_module(self, module, name=""):
         # type: (types.ModuleType, str) -> TrailBlazer
         """ Wander through a module """
-        if not module_name:
-            module_name = self._join(module.__package__ or "", module.__name__)
-        self._enqueue(self._MODULE, self._walk_module, module, module_name)
+        if not name:
+            name = self._join(module.__package__ or "", module.__name__)
+        self._enqueue(self._MODULE, self._walk_module, module, name)
         return self
 
     def roam_class(self, class_, fullname=""):
