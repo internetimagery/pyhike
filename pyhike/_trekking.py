@@ -36,8 +36,8 @@ class Chart(object):
         # type: (str) -> None
         """ Run after visiting """
 
-    def error(self, errType, errVal, errTrace):
-        # type: (Type[Exception], Exception, types.TracebackType) -> Optional[bool]
+    def error(self, fullname, errType, errVal, errTrace):
+        # type: (str, Type[Exception], Exception, types.TracebackType) -> Optional[bool]
         """ Respond to errors """
 
     def visit_directory(self, fullname, directorypath, traveler):
@@ -126,7 +126,20 @@ class TrailBlazer(object):
     def roam_file(self, filepath, package_name=""):
         # type: (str, str) -> TrailBlazer
         """ Import a new module from filepath """
-        self._enqueue(self._FILE, self._walk_file, filepath, package_name)
+        match = MODULE_REG.match(os.path.basename(filepath))
+        if not match:
+            raise ValueError(
+                "File path provided is not a valid module {}".format(filepath)
+            )
+        module_name = match.group(1)
+        if module_name == "__init__":
+            if not package_name:
+                fullname = os.path.basename(filepath)
+            else:
+                fullname = package_name
+        else:
+            fullname = self._join(package_name, module_name)
+        self._enqueue(self._FILE, self._walk_file, filepath, fullname)
         return self
 
     def roam_module(self, module, name=""):
@@ -159,104 +172,96 @@ class TrailBlazer(object):
         with self._scope(package_name):
             if self._visitor.visit_directory(package_name, directory, self):
                 return
+            with self._error(package_name):
+                modules = set(["__init__"])
+                for name in os.listdir(directory):
+                    fullpath = os.path.join(directory, name)
 
-            modules = set(["__init__"])
-            for name in os.listdir(directory):
-                fullpath = os.path.join(directory, name)
+                    package_file = self._get_package(fullpath)
+                    if package_file:
+                        self.roam_file(package_file, self._join(package_name, name))
+                        self.roam_directory(fullpath, self._join(package_name, name))
+                        modules.add(name)
+                        continue
 
-                package_file = self._get_package(fullpath)
-                if package_file:
-                    self.roam_file(package_file, self._join(package_name, name))
-                    self.roam_directory(fullpath, self._join(package_name, name))
-                    modules.add(name)
-                    continue
+                    match = MODULE_REG.match(name)
+                    if not match or match.group(1) in modules:
+                        continue
+                    # Don't follow modules more than once. eg py+pyc
+                    modules.add(match.group(1))
+                    self.roam_file(fullpath, package_name)
 
-                match = MODULE_REG.match(name)
-                if not match or match.group(1) in modules:
-                    continue
-                # Don't follow modules more than once. eg py+pyc
-                modules.add(match.group(1))
-                self.roam_file(fullpath, package_name)
-
-    def _walk_file(self, filepath, package_name):
+    def _walk_file(self, filepath, fullname):
         # type: (str, str) -> None
-        match = MODULE_REG.match(os.path.basename(filepath))
-        if not match:
-            raise ValueError(
-                "File path provided is not a valid module {}".format(filepath)
-            )
-        module_name = match.group(1)
-        if module_name == "__init__":
-            if not package_name:
-                fullname = os.path.basename(filepath)
-            else:
-                fullname = package_name
-        else:
-            fullname = self._join(package_name, module_name)
-
         with self._scope(fullname):
             if self._visitor.visit_file(fullname, filepath, self):
                 return
-
-            # Ensure module (and other imports within it) work
-            if not package_name:
+            with self._error(fullname):
+                # Ensure module (and other imports within it) work
                 package_path = os.path.dirname(filepath)
-                if module_name == "__init__":
+                match = MODULE_REG.match(os.path.basename(filepath))
+                if match and match.group(1) == "__init__":
                     package_path = os.path.dirname(package_path)
                 if package_path not in sys.path:
                     sys.path.insert(0, package_path)
 
-            module = importlib.import_module(fullname)
-            self.roam_module(module, fullname)
+                module = importlib.import_module(fullname)
+                self.roam_module(module, fullname)
 
     def _walk_module(self, module, fullname):
         # type: (types.ModuleType, str) -> None
         with self._scope(fullname):
             if self._visitor.visit_module(fullname, module, self):
                 return
-            for name, value in inspect.getmembers(module):
-                subname = self._join(fullname, name, True)
-                if inspect.ismodule(value):
-                    self.roam_module(value, subname)
-                elif inspect.isclass(value):
-                    self.roam_class(value, subname)
-                elif inspect.isroutine(value):
-                    self._enqueue(
-                        self._FUNCTION, self._walk_function, value, module, subname
-                    )
-                else:
-                    self._enqueue(
-                        self._ATTRIBUTE, self._walk_attribute, value, module, subname
-                    )
+            with self._error(fullname):
+                for name, value in inspect.getmembers(module):
+                    subname = self._join(fullname, name, True)
+                    if inspect.ismodule(value):
+                        self.roam_module(value, subname)
+                    elif inspect.isclass(value):
+                        self.roam_class(value, subname)
+                    elif inspect.isroutine(value):
+                        self._enqueue(
+                            self._FUNCTION, self._walk_function, value, module, subname
+                        )
+                    else:
+                        self._enqueue(
+                            self._ATTRIBUTE,
+                            self._walk_attribute,
+                            value,
+                            module,
+                            subname,
+                        )
 
     def _walk_class(self, class_, fullname):
         # type: (type, str) -> None
         with self._scope(fullname):
             if self._visitor.visit_class(fullname, class_, self):
                 return
-            if class_ is type:
-                # Recursion safeguards are expected to be provided by the visitor
-                # however this safeguard is hard coded.
-                return
-            for attr in inspect.classify_class_attrs(class_):
-                subname = self._join(fullname, attr.name)
-                if attr.kind == "data":
-                    if inspect.isclass(attr.object):
-                        self._enqueue(
-                            self._CLASS, self._walk_class, attr.object, subname
-                        )
-                        continue
-                    if inspect.isroutine(attr.object):
-                        self._enqueue(
-                            self._FUNCTION,
-                            self._walk_function,
-                            attr.object,
-                            class_,
-                            subname,
-                        )
-                        continue
-                priority, func = self._class_kind_map[attr.kind]
-                self._enqueue(priority, func, attr.object, class_, subname)
+            with self._error(fullname):
+                if class_ is type:
+                    # Recursion safeguards are expected to be provided by the visitor
+                    # however this safeguard is hard coded.
+                    return
+                for attr in inspect.classify_class_attrs(class_):
+                    subname = self._join(fullname, attr.name)
+                    if attr.kind == "data":
+                        if inspect.isclass(attr.object):
+                            self._enqueue(
+                                self._CLASS, self._walk_class, attr.object, subname
+                            )
+                            continue
+                        if inspect.isroutine(attr.object):
+                            self._enqueue(
+                                self._FUNCTION,
+                                self._walk_function,
+                                attr.object,
+                                class_,
+                                subname,
+                            )
+                            continue
+                    priority, func = self._class_kind_map[attr.kind]
+                    self._enqueue(priority, func, attr.object, class_, subname)
 
     def _walk_function(self, func, parent, fullname):
         # type: (Callable, Any, str) -> None
@@ -335,15 +340,20 @@ class TrailBlazer(object):
         self._visitor.enter(fullname)
         try:
             yield
+        finally:
+            self._visitor.leave(fullname)
+
+    @contextlib.contextmanager
+    def _error(self, name):
+        try:
+            yield
         except Exception:
             if self._pass_error:
                 raise
-            if self._visitor.error(*sys.exc_info()):
+            if self._visitor.error(name, *sys.exc_info()):
                 self._pass_error = True
                 raise
-            LOG.exception("Error while traversing %s", fullname)
-        finally:
-            self._visitor.leave(fullname)
+            LOG.exception("Error while traversing %s", name)
 
     @contextlib.contextmanager
     def _cleanup(self):

@@ -115,7 +115,7 @@ class TestTrailBlazer(unittest.TestCase):
             self.visitor.modules, {},
         )
         (error,) = self.visitor.errors
-        self.assertEqual(RuntimeError, error[0])
+        self.assertEqual(RuntimeError, error[1])
 
     def test_visit_class(self):
         self.traveler.roam_file(self.test_simple).hike()

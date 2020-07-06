@@ -78,7 +78,7 @@ There are a few special methods as well for consideration, that may make life a 
 
 * __enter__(name) Run before traversing into anything, with the name of the thing it's about to traverse into.
 * __leave__(name) Run after finishing the traversal. Run with the same name as it was entered.
-* __error__(errType, errVal, errTrace) Run anytime an error occurrs during traversal. Return _True_ to allow the error to propigate up halting traversal.
+* __error__(name, errType, errVal, errTrace) Run anytime an error occurrs during traversal. Return _True_ to allow the error to propigate up halting traversal.
 
 ## Notes
 
