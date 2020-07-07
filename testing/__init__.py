@@ -21,7 +21,10 @@ class TestVisitor(Chart):
         self.methods = {}
         self.classmethods = {}
         self.staticmethods = {}
+        self.methoddescriptors = {}
+        self.datadescriptors = {}
         self.properties = {}
+        self.method_descriptors = {}
         self.attributes = {}
 
     def error(self, *err):
@@ -50,6 +53,12 @@ class TestVisitor(Chart):
 
     def visit_staticmethod(self, name, func, _, __):
         self.staticmethods[name] = func.__func__.__name__
+
+    def visit_method_descriptor(self, name, desc, _, __):
+        self.methoddescriptors[name] = desc.__get__.__name__
+
+    def visit_data_descriptor(self, name, desc, _, __):
+        self.datadescriptors[name] = desc.__get__.__name__
 
     def visit_property(self, name, func, _, __):
         self.properties[name] = func.fget.__name__
@@ -147,6 +156,22 @@ class TestTrailBlazer(unittest.TestCase):
             self.visitor.staticmethods["test_simple:TestClass.test_staticmethod"],
         )
 
+    def test_visit_method_descriptor(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "__get__",
+            self.visitor.methoddescriptors[
+                "test_simple:TestClass.test_method_descriptor"
+            ],
+        )
+
+    def test_visit_data_descriptor(self):
+        self.traveler.roam_file(self.test_simple).hike()
+        self.assertEqual(
+            "__get__",
+            self.visitor.datadescriptors["test_simple:TestClass.test_data_descriptor"],
+        )
+
     def test_visit_property(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(
@@ -157,6 +182,23 @@ class TestTrailBlazer(unittest.TestCase):
     def test_visit_attributes(self):
         self.traveler.roam_file(self.test_simple).hike()
         self.assertEqual(123, self.visitor.attributes["test_simple:test_attribute"])
+
+    def test_propigate_visitor_fails(self):
+        class ErrorVisitor(Chart):
+            def __init__(self):
+                self.error_count = 0
+
+            def error(self, *_):
+                self.error_count += 1
+
+            def visit_class(self, *_):
+                raise RuntimeError("Oh damn!")
+
+        visitor = ErrorVisitor()
+        traveler = TrailBlazer(visitor)
+        traveler.roam_file(self.test_simple)
+        with self.assertRaises(RuntimeError):
+            traveler.hike()
 
 
 if __name__ == "__main__":

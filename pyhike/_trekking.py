@@ -72,9 +72,17 @@ class Chart(object):
         # type: (str, Callable, type, TrailBlazer) -> None
         """ Visit a static method """
 
-    def visit_property(self, fullname, func, class_, traveler):
-        # type: (str, Callable, type, TrailBlazer) -> None
-        """ Visit a property """
+    def visit_method_descriptor(self, fullname, desc, class_, traveler):
+        # type: (str, type, type, TrailBlazer) -> None
+        """ Visit a method descriptor (__get__) """
+
+    def visit_data_descriptor(self, fullname, desc, class_, traveler):
+        # type: (str, type, type, TrailBlazer) -> None
+        """ Visit a data descriptor (__set__) """
+
+    def visit_property(self, fullname, prp, class_, traveler):
+        # type: (str, Any, type, TrailBlazer) -> None
+        """ Visit a property (data descriptor-a-like) """
 
     def visit_attribute(self, fullname, value, parent, traveler):
         # type: (str, Any, Any, TrailBlazer) -> None
@@ -104,7 +112,7 @@ class TrailBlazer(object):
             "property": (self._FUNCTION, self._walk_property),
             "static method": (self._FUNCTION, self._walk_staticmethod),
             "class method": (self._FUNCTION, self._walk_classmethod),
-        }
+        }  # type: Dict[str, Tuple[int, Callable[..., None]]]
 
     def hike(self):
         """ Travel through the objects provided! """
@@ -260,6 +268,25 @@ class TrailBlazer(object):
                                 subname,
                             )
                             continue
+                        if inspect.isdatadescriptor(attr.object):
+                            self._enqueue(
+                                self._FUNCTION,
+                                self._walk_data_descriptor,
+                                attr.object,
+                                class_,
+                                subname,
+                            )
+                            continue
+                    if attr.kind == "method" and not callable(attr.object):
+                        if inspect.ismethoddescriptor(attr.object):
+                            self._enqueue(
+                                self._FUNCTION,
+                                self._walk_method_descriptor,
+                                attr.object,
+                                class_,
+                                subname,
+                            )
+                            continue
                     priority, func = self._class_kind_map[attr.kind]
                     self._enqueue(priority, func, attr.object, class_, subname)
 
@@ -283,10 +310,20 @@ class TrailBlazer(object):
         with self._scope(fullname):
             self._visitor.visit_staticmethod(fullname, func, class_, self)
 
-    def _walk_property(self, func, class_, fullname):
-        # type: (Callable, type, str) -> None
+    def _walk_method_descriptor(self, desc, class_, fullname):
+        # type: (type, type, str) -> None
         with self._scope(fullname):
-            self._visitor.visit_property(fullname, func, class_, self)
+            self._visitor.visit_method_descriptor(fullname, desc, class_, self)
+
+    def _walk_data_descriptor(self, desc, class_, fullname):
+        # type: (type, type, str) -> None
+        with self._scope(fullname):
+            self._visitor.visit_data_descriptor(fullname, desc, class_, self)
+
+    def _walk_property(self, desc, class_, fullname):
+        # type: (type, type, str) -> None
+        with self._scope(fullname):
+            self._visitor.visit_property(fullname, desc, class_, self)
 
     def _walk_attribute(self, value, parent, fullname):
         # type: (Any, Any, str) -> None
